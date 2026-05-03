@@ -4,9 +4,21 @@ This guide explains how to find and update CSS selectors for each wine retailer.
 
 ## File Structure
 
-- `backend/config/selectors.js` - Selector configuration for all retailers
-- `backend/scrapers/genericScraper.js` - Generic scraper using selectors from config
-- `backend/scrapers/*Scraper.js` - Individual scraper files
+- `backend/config/selectors.js` - Selector configuration for search page and product page
+- `backend/scrapers/genericScraper.js` - Generic scraper supporting both modes
+- `backend/scrapers/testSelectors.js` - Testing utility for validating selectors
+
+## Two Scraping Modes
+
+### Search Page Mode (Current Implementation)
+- Scrapes search results listing page
+- Extracts: name, price, discount price, product URL
+- Used for quick price comparison
+
+### Product Page Mode (Future Enhancement)
+- Scrapes individual product detail page
+- Extracts: name, price, discount, description, vintage, country, etc.
+- Useful for detailed information and product pages
 
 ## How to Find Selectors
 
@@ -90,7 +102,9 @@ supervin: {
 
 ## Testing Selectors
 
-### 1. Manual Testing in Browser Console
+### Search Page Testing
+
+**Method 1: Manual Testing in Browser Console**
 
 Open the retailer's search page and test your selectors:
 
@@ -98,14 +112,50 @@ Open the retailer's search page and test your selectors:
 // Test container selector
 document.querySelectorAll('.product').length  // Should return number > 0
 
-// Test name selector
+// Test name selector in first product
 document.querySelector('.product .product-name').textContent
 
 // Test price selector
 document.querySelector('.product .current-price').textContent
 ```
 
-### 2. Test the Scraper
+**Method 2: Automated Testing Tool**
+
+Test search page selectors:
+```bash
+cd /var/www/wineclerk
+
+# Test single retailer
+node backend/scrapers/testSelectors.js search supervin "Rioja"
+
+# Test all retailers
+node backend/scrapers/testSelectors.js search
+```
+
+### Product Page Testing
+
+**Method 1: Update selectors.js**
+
+Add selectors for product page:
+```javascript
+productPage: {
+  url: 'window.location.href',
+  name: 'h1.product-name',
+  price: '.product-price',
+  discountPrice: '.sale-price',
+  description: '.description',
+  vintage: '.vintage',
+  country: '.country'
+}
+```
+
+**Method 2: Test with Real Product URL**
+
+```bash
+node backend/scrapers/testSelectors.js product supervin "https://www.supervin.dk/product/example"
+```
+
+### 3. Test Through API
 
 Run the wine search through your API:
 ```bash
