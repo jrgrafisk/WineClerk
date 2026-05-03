@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "Wine Clerk",
+  "version": "1.0.0",
+  "description": "Compare wine prices across Danish retailers",
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://www.supervin.dk/*",
+    "https://www.andrupvin.dk/*",
+    "https://www.laudrupvin.dk/*",
+    "https://www.justvin.dk/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Wine Clerk - Compare Prices"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.supervin.dk/*",
+        "https://www.andrupvin.dk/*",
+        "https://www.laudrupvin.dk/*",
+        "https://www.justvin.dk/*"
+      ],
+      "js": ["content.js"]
+    }
+  ]
+}
