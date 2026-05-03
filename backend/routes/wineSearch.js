@@ -4,6 +4,8 @@ const { searchSupervin } = require('../scrapers/supervinScraper');
 const { searchAndrupvin } = require('../scrapers/andrupvinScraper');
 const { searchLaudrupvin } = require('../scrapers/laudrupvinScraper');
 const { searchJustvin } = require('../scrapers/justvinScraper');
+const { scrapeWithPuppeteer } = require('../scrapers/puppeteerScraper');
+const selectorsConfig = require('../config/selectors');
 const { savePrices } = require('../db');
 
 router.get('/search', async (req, res) => {
@@ -14,18 +16,28 @@ router.get('/search', async (req, res) => {
   }
 
   try {
-    const [supervinResults, andrupvinResults, laudrupvinResults, justvinResults] = await Promise.all([
+    const searches = [
       searchSupervin(q),
       searchAndrupvin(q),
       searchLaudrupvin(q),
       searchJustvin(q)
-    ]);
+    ];
+
+    // Add Puppeteer-based scrapers
+    if (selectorsConfig.havnensvin?.usePuppeteer) {
+      const searchUrl = selectorsConfig.havnensvin.searchUrl + encodeURIComponent(q);
+      searches.push(scrapeWithPuppeteer(searchUrl, selectorsConfig.havnensvin.searchPage, 'havnensvin'));
+    }
+
+    const results = await Promise.all(searches);
+    const [supervinResults, andrupvinResults, laudrupvinResults, justvinResults, ...otherResults] = results;
 
     const allResults = [
       ...supervinResults,
       ...andrupvinResults,
       ...laudrupvinResults,
-      ...justvinResults
+      ...justvinResults,
+      ...otherResults.flat()
     ];
 
     // Save prices to database

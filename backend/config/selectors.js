@@ -96,6 +96,7 @@ module.exports = {
   },
   havnensvin: {
     searchUrl: 'https://havnens-vin.dk/catalogsearch/result/?q=',
+    usePuppeteer: true,
     searchPage: {
       container: 'li.product-item',
       name: 'strong.product-item-name a',
