@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wine Clerk - Danish Wine Price Comparison</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🍷 Wine Clerk</h1>
+      <p>Compare wine prices across Danish retailers</p>
+    </header>
+
+    <div class="search-section">
+      <input
+        type="text"
+        id="searchInput"
+        placeholder="Search for a wine..."
+        autocomplete="off"
+      >
+      <button id="searchBtn">Search</button>
+    </div>
+
+    <div id="loading" class="loading" style="display: none;">
+      Searching prices...
+    </div>
+
+    <div id="results" class="results-section"></div>
+
+    <div id="error" class="error" style="display: none;"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
