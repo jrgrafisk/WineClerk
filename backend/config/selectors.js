@@ -18,7 +18,7 @@ module.exports = {
       country: '[data-country]'
     }
   },
-    havnens vin: {
+    havnensvin: {
     searchUrl: 'https://havnens-vin.dk/catalogsearch/result/?q=',
     searchPage: {
       container: 'item product product-item scroll-reveal reveal-slide-in reveal-ready',
