@@ -32,15 +32,21 @@ module.exports = {
 
   laudrupvin: {
     name: 'Laudrupvin',
-    url: 'https://www.laudrupvin.dk/search?q=',
+    url: 'https://laudrup.dk/catalogsearch/result/?q=',
     selectors: {
-      container: '.product-item',
-      wineName: '.product-title',
-      price: '.product-price, .price',
-      discountPrice: '.discount-price, .sale-price',
-      productLink: 'a'
+      container: '.product-item-info',
+      wineName: 'strong.product-item-name a, .product-item-name a',
+      price: '.price-final_price .price, .price',
+      discountPrice: '.minimal-price-link .price',
+      productLink: '.product-item-link, a.product-photo'
     },
-    domain: 'laudrupvin.dk'
+    productPage: {
+      name: 'h1.page-title, h1',
+      price: '.price-final_price .price',
+      discountPrice: '.price-tier_price .price'
+    },
+    domain: 'laudrup.dk',
+    notes: 'Note: Search shows bulk discount price (204 for 12), single bottle is 266'
   },
 
   justvin: {
