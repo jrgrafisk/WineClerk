@@ -94,20 +94,20 @@ module.exports = {
       country: '[data-country]'
     }
   },
-  'havnens-vin': {
+  havnensvin: {
     searchUrl: 'https://havnens-vin.dk/catalogsearch/result/?q=',
     searchPage: {
       container: '.product.product-item',
       name: '.product-item-name',
       price: '.price-final_price',
-      discountPrice: '.old-price',
+      discountPrice: null,
       url: 'a'
     },
     productPage: {
       url: 'window.location.href',
       name: '.page-title-wrapper h1',
       price: '.price-final_price',
-      discountPrice: '.old-price',
+      discountPrice: null,
       description: '[itemprop="description"]',
       vintage: '[data-vintage]',
       country: '[data-country]'
