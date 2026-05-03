@@ -1,7 +1,7 @@
 module.exports = {
   supervin: {
     name: 'Supervin',
-    url: 'https://www.supervin.dk/search?q=',
+    url: 'https://www.supervin.dk/searchpage?Products_dk%5Bquery%5D=',
     selectors: {
       container: '.product-item',
       wineName: '.product-title',
