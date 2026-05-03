@@ -5,7 +5,6 @@ const fs = require('fs');
 const dataDir = path.join(__dirname, '..', 'web', 'data');
 const dbPath = path.join(dataDir, 'prices.db');
 
-// Ensure data directory exists
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
@@ -19,101 +18,127 @@ const db = new sqlite3.Database(dbPath, (err) => {
   }
 });
 
+function run(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.run(sql, params, function (err) {
+      if (err) reject(err);
+      else resolve(this);
+    });
+  });
+}
+
+function all(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.all(sql, params, (err, rows) => {
+      if (err) reject(err);
+      else resolve(rows || []);
+    });
+  });
+}
+
+function get(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.get(sql, params, (err, row) => {
+      if (err) reject(err);
+      else resolve(row);
+    });
+  });
+}
+
 function initializeDatabase() {
   db.serialize(() => {
-    // Create prices table
+    // Track what users search for
     db.run(`
-      CREATE TABLE IF NOT EXISTS prices (
+      CREATE TABLE IF NOT EXISTS wine_searches (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        wine_name TEXT NOT NULL,
-        retailer TEXT NOT NULL,
-        price REAL NOT NULL,
-        url TEXT,
-        searched_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(wine_name, retailer)
+        wine_name TEXT NOT NULL COLLATE NOCASE,
+        search_count INTEGER DEFAULT 1,
+        last_searched DATETIME DEFAULT CURRENT_TIMESTAMP,
+        last_crawled DATETIME,
+        UNIQUE(wine_name)
       )
     `);
 
-    // Create index for faster searches
+    // Price snapshots per retailer
     db.run(`
-      CREATE INDEX IF NOT EXISTS idx_wine_name ON prices(wine_name)
+      CREATE TABLE IF NOT EXISTS price_snapshots (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        wine_name TEXT NOT NULL COLLATE NOCASE,
+        retailer TEXT NOT NULL,
+        price REAL NOT NULL,
+        url TEXT,
+        crawled_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
     `);
 
-    db.run(`
-      CREATE INDEX IF NOT EXISTS idx_searched_at ON prices(searched_at)
-    `);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_snapshots_wine ON price_snapshots(wine_name)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_snapshots_crawled ON price_snapshots(crawled_at)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_searches_count ON wine_searches(search_count DESC)`);
   });
 }
 
-function savePrices(results) {
-  return new Promise((resolve, reject) => {
-    db.serialize(() => {
-      const stmt = db.prepare(`
-        INSERT OR REPLACE INTO prices (wine_name, retailer, price, url)
-        VALUES (?, ?, ?, ?)
-      `);
-
-      results.forEach(result => {
-        if (result.price !== null && result.price !== undefined) {
-          stmt.run(
-            result.name,
-            result.retailer,
-            result.price,
-            result.url || null,
-            (err) => {
-              if (err && err.code !== 'SQLITE_CONSTRAINT') {
-                console.error('Error saving price:', err);
-              }
-            }
-          );
-        }
-      });
-
-      stmt.finalize((err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
-  });
+// Log a search and return whether we have fresh cached results
+async function logSearch(wineName) {
+  await run(`
+    INSERT INTO wine_searches (wine_name, search_count, last_searched)
+    VALUES (?, 1, CURRENT_TIMESTAMP)
+    ON CONFLICT(wine_name) DO UPDATE SET
+      search_count = search_count + 1,
+      last_searched = CURRENT_TIMESTAMP
+  `, [wineName]);
 }
 
-function getPricesByWine(wineName) {
-  return new Promise((resolve, reject) => {
-    const query = `
-      SELECT wine_name, retailer, price, url, searched_at
-      FROM prices
-      WHERE LOWER(wine_name) LIKE LOWER(?)
-      ORDER BY searched_at DESC
-      LIMIT 100
-    `;
+// Get cached prices for a wine (returns null if stale or missing)
+async function getCachedPrices(wineName, maxAgeHours = 24) {
+  const rows = await all(`
+    SELECT wine_name, retailer, price, url, crawled_at
+    FROM price_snapshots
+    WHERE LOWER(wine_name) = LOWER(?)
+      AND crawled_at > datetime('now', '-' || ? || ' hours')
+    ORDER BY price ASC
+  `, [wineName, maxAgeHours]);
 
-    db.all(query, [`%${wineName}%`], (err, rows) => {
-      if (err) reject(err);
-      else resolve(rows || []);
-    });
-  });
+  return rows.length > 0 ? rows : null;
 }
 
-function getLatestPrices(wineName) {
-  return new Promise((resolve, reject) => {
-    const query = `
-      SELECT wine_name, retailer, price, url, MAX(searched_at) as searched_at
-      FROM prices
-      WHERE LOWER(wine_name) = LOWER(?)
-      GROUP BY retailer
-      ORDER BY price ASC
-    `;
+// Save price snapshots from a scrape
+async function savePrices(results) {
+  if (!results || results.length === 0) return;
 
-    db.all(query, [wineName], (err, rows) => {
-      if (err) reject(err);
-      else resolve(rows || []);
-    });
-  });
+  for (const r of results) {
+    if (r.price === null || r.price === undefined) continue;
+    await run(`
+      INSERT INTO price_snapshots (wine_name, retailer, price, url)
+      VALUES (?, ?, ?, ?)
+    `, [r.name, r.retailer, r.price, r.url || null]);
+  }
+}
+
+// Get wines to crawl (most searched, not crawled recently)
+async function getWinesToCrawl(limit = 100) {
+  return all(`
+    SELECT wine_name, search_count, last_crawled
+    FROM wine_searches
+    WHERE last_crawled IS NULL
+       OR last_crawled < datetime('now', '-23 hours')
+    ORDER BY search_count DESC, last_searched DESC
+    LIMIT ?
+  `, [limit]);
+}
+
+// Mark a wine as crawled
+async function markCrawled(wineName) {
+  return run(`
+    UPDATE wine_searches SET last_crawled = CURRENT_TIMESTAMP
+    WHERE LOWER(wine_name) = LOWER(?)
+  `, [wineName]);
 }
 
 module.exports = {
   db,
+  logSearch,
+  getCachedPrices,
   savePrices,
-  getPricesByWine,
-  getLatestPrices
+  getWinesToCrawl,
+  markCrawled
 };
