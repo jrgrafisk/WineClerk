@@ -74,5 +74,23 @@ module.exports = {
     },
     domain: 'havnens-vin.dk',
     notes: 'Multiple selector fallbacks for robustness'
+  },
+
+  skagenfood: {
+    name: 'Skagen Food',
+    url: 'https://skagenfood.dk/da-dk/soeg/?q=',
+    selectors: {
+      container: '.product-tile',
+      wineName: 'h3.product-tile__headline',
+      price: '.btn__inner-text',
+      discountPrice: null,
+      productLink: '.tile-description, a.product-tile__container'
+    },
+    productPage: {
+      name: 'h1.store-product__headline, h1',
+      price: '.product-prices__price',
+      discountPrice: null
+    },
+    domain: 'skagenfood.dk'
   }
 };
