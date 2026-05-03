@@ -4,6 +4,7 @@ const { searchSupervin } = require('../scrapers/supervinScraper');
 const { searchAndrupvin } = require('../scrapers/andrupvinScraper');
 const { searchLaudrupvin } = require('../scrapers/laudrupvinScraper');
 const { searchJustvin } = require('../scrapers/justvinScraper');
+const { savePrices } = require('../db');
 
 router.get('/search', async (req, res) => {
   const { q } = req.query;
@@ -26,6 +27,11 @@ router.get('/search', async (req, res) => {
       ...laudrupvinResults,
       ...justvinResults
     ];
+
+    // Save prices to database
+    if (allResults.length > 0) {
+      await savePrices(allResults);
+    }
 
     // Group by wine name and aggregate prices
     const grouped = {};
