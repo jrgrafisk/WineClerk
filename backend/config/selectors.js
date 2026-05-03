@@ -1,13 +1,18 @@
 module.exports = {
   supervin: {
     name: 'Supervin',
-    url: 'https://www.supervin.dk/searchpage?Products_dk%5Bquery%5D=',
+    url: 'https://www.supervin.dk/search?q=',
     selectors: {
       container: 'article',
       wineName: 'h4 a, .product-info h4 a',
       price: '.base-price, .price',
-      discountPrice: '.volume-discounted-price, .sale-price',
+      discountPrice: '.volume-discounted-price',
       productLink: 'h4 a, .product-image a'
+    },
+    productPage: {
+      name: 'h1',
+      price: '.base-price',
+      discountPrice: '.volume-discounted-price'
     },
     domain: 'supervin.dk'
   },
@@ -55,7 +60,6 @@ module.exports = {
     name: 'Havnens Vin',
     url: 'https://havnens-vin.dk/catalogsearch/result/?q=',
     selectors: {
-      // Multiple fallback selectors (comma-separated, tries first match)
       container: 'li.product-item, li.item, div.product-item, div.product',
       wineName: 'strong.product-item-name a, .product-item-name a, h2.product-name, .product-title',
       price: 'span.price, .price, [data-price], .product-price, .price-final_price',
