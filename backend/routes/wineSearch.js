@@ -1,11 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { searchSupervin } = require('../scrapers/supervinScraper');
-const { searchAndrupvin } = require('../scrapers/andrupvinScraper');
-const { searchLaudrupvin } = require('../scrapers/laudrupvinScraper');
-const { searchJustvin } = require('../scrapers/justvinScraper');
-const { scrapeWithPuppeteer } = require('../scrapers/puppeteerScraper');
 const selectorsConfig = require('../config/selectors');
+const { scrapeSearchPage } = require('../scrapers/genericScraper');
 const { savePrices } = require('../db');
 
 router.get('/search', async (req, res) => {
@@ -16,29 +12,13 @@ router.get('/search', async (req, res) => {
   }
 
   try {
-    const searches = [
-      searchSupervin(q),
-      searchAndrupvin(q),
-      searchLaudrupvin(q),
-      searchJustvin(q)
-    ];
-
-    // Add Puppeteer-based scrapers
-    if (selectorsConfig.havnensvin?.usePuppeteer) {
-      const searchUrl = selectorsConfig.havnensvin.searchUrl + encodeURIComponent(q);
-      searches.push(scrapeWithPuppeteer(searchUrl, selectorsConfig.havnensvin.searchPage, 'havnensvin'));
-    }
+    // Search all retailers in parallel
+    const searches = Object.entries(selectorsConfig).map(([key, config]) =>
+      scrapeSearchPage(q, config, key)
+    );
 
     const results = await Promise.all(searches);
-    const [supervinResults, andrupvinResults, laudrupvinResults, justvinResults, ...otherResults] = results;
-
-    const allResults = [
-      ...supervinResults,
-      ...andrupvinResults,
-      ...laudrupvinResults,
-      ...justvinResults,
-      ...otherResults.flat()
-    ];
+    const allResults = results.flat();
 
     // Save prices to database
     if (allResults.length > 0) {

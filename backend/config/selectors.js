@@ -1,117 +1,68 @@
 module.exports = {
   supervin: {
-    searchUrl: 'https://www.supervin.dk/search?q=',
-    searchPage: {
+    name: 'Supervin',
+    url: 'https://www.supervin.dk/search?q=',
+    selectors: {
       container: '.product-item',
-      name: '.product-title',
-      price: '.product-price',
-      discountPrice: '.discount-price',
-      url: 'a'
+      wineName: '.product-title',
+      price: '.product-price, .price',
+      discountPrice: '.discount-price, .sale-price',
+      productLink: 'a'
     },
-    productPage: {
-      url: 'window.location.href',
-      name: 'h1.product-name',
-      price: '[data-price]',
-      discountPrice: '[data-sale-price]',
-      description: '.product-description',
-      vintage: '[data-vintage]',
-      country: '[data-country]'
-    }
+    domain: 'supervin.dk'
   },
-    havnensvin: {
-    searchUrl: 'https://havnens-vin.dk/catalogsearch/result/?q=',
-    searchPage: {
-      container: 'item product product-item scroll-reveal reveal-slide-in reveal-ready',
-      name: 'product name product-item-name',
-      price: 'price-container price-final_price tax weee',
-      discountPrice: '.discount-price',
-      url: 'a'
-    },
-    productPage: {
-      url: 'window.location.href',
-      name: 'page-title-wrapper product scroll-reveal reveal-slide-in reveal-ready',
-      price: 'price-container price-final_price tax weee',
-      discountPrice: '[data-sale-price]',
-      description: 'description',
-      vintage: '[data-vintage]',
-      country: '[data-country]'
-    }
-  },
+
   andrupvin: {
-    searchUrl: 'https://www.andrupvin.dk/search?q=',
-    searchPage: {
+    name: 'Andrupvin',
+    url: 'https://www.andrupvin.dk/search?q=',
+    selectors: {
       container: '.product-item',
-      name: '.product-title',
-      price: '.product-price',
-      discountPrice: '.discount-price',
-      url: 'a'
+      wineName: '.product-title',
+      price: '.product-price, .price',
+      discountPrice: '.discount-price, .sale-price',
+      productLink: 'a'
     },
-    productPage: {
-      url: 'window.location.href',
-      name: 'h1.product-name',
-      price: '[data-price]',
-      discountPrice: '[data-sale-price]',
-      description: '.product-description',
-      vintage: '[data-vintage]',
-      country: '[data-country]'
-    }
+    domain: 'andrupvin.dk'
   },
+
   laudrupvin: {
-    searchUrl: 'https://www.laudrupvin.dk/search?q=',
-    searchPage: {
+    name: 'Laudrupvin',
+    url: 'https://www.laudrupvin.dk/search?q=',
+    selectors: {
       container: '.product-item',
-      name: '.product-title',
-      price: '.product-price',
-      discountPrice: '.discount-price',
-      url: 'a'
+      wineName: '.product-title',
+      price: '.product-price, .price',
+      discountPrice: '.discount-price, .sale-price',
+      productLink: 'a'
     },
-    productPage: {
-      url: 'window.location.href',
-      name: 'h1.product-name',
-      price: '[data-price]',
-      discountPrice: '[data-sale-price]',
-      description: '.product-description',
-      vintage: '[data-vintage]',
-      country: '[data-country]'
-    }
+    domain: 'laudrupvin.dk'
   },
+
   justvin: {
-    searchUrl: 'https://www.justvin.dk/search?q=',
-    searchPage: {
+    name: 'Justvin',
+    url: 'https://www.justvin.dk/search?q=',
+    selectors: {
       container: '.product-item',
-      name: '.product-title',
-      price: '.product-price',
-      discountPrice: '.discount-price',
-      url: 'a'
+      wineName: '.product-title',
+      price: '.product-price, .price',
+      discountPrice: '.discount-price, .sale-price',
+      productLink: 'a'
     },
-    productPage: {
-      url: 'window.location.href',
-      name: 'h1.product-name',
-      price: '[data-price]',
-      discountPrice: '[data-sale-price]',
-      description: '.product-description',
-      vintage: '[data-vintage]',
-      country: '[data-country]'
-    }
+    domain: 'justvin.dk'
   },
+
   havnensvin: {
-    searchUrl: 'https://havnens-vin.dk/catalogsearch/result/?q=',
-    usePuppeteer: true,
-    searchPage: {
-      container: 'li.product-item',
-      name: 'strong.product-item-name a',
-      price: 'span.price',
-      discountPrice: null,
-      url: 'a.product-item-link'
+    name: 'Havnens Vin',
+    url: 'https://havnens-vin.dk/catalogsearch/result/?q=',
+    selectors: {
+      // Multiple fallback selectors (comma-separated, tries first match)
+      container: 'li.product-item, li.item, div.product-item, div.product',
+      wineName: 'strong.product-item-name a, .product-item-name a, h2.product-name, .product-title',
+      price: 'span.price, .price, [data-price], .product-price, .price-final_price',
+      discountPrice: '.old-price, .sale-price, .discount-price',
+      productLink: 'a.product-item-link, a.product-link, a[href*=".html"]'
     },
-    productPage: {
-      url: 'window.location.href',
-      name: '.page-title-wrapper h1',
-      price: '.price-container .price',
-      discountPrice: null,
-      description: '[itemprop="description"]',
-      vintage: '[data-vintage]',
-      country: '[data-country]'
-    }
+    domain: 'havnens-vin.dk',
+    notes: 'Multiple selector fallbacks for robustness'
   }
 };

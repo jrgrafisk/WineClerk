@@ -3,8 +3,8 @@ const cheerio = require('cheerio');
 
 async function scrapeSearchPage(retailerName, config, retailerKey) {
   try {
-    const searchUrl = config.searchUrl + encodeURIComponent(retailerName);
-    const selectors = config.searchPage;
+    const searchUrl = config.url + encodeURIComponent(retailerName);
+    const selectors = config.selectors;
 
     const response = await axios.get(searchUrl, {
       timeout: 10000,
@@ -16,19 +16,25 @@ async function scrapeSearchPage(retailerName, config, retailerKey) {
     const $ = cheerio.load(response.data);
     const results = [];
 
-    // Get all product containers
-    $(selectors.container).each((index, element) => {
+    // Get all product containers - try selectors in order
+    const containerSelector = getFirstWorkingSelector($, selectors.container);
+    if (!containerSelector) {
+      console.warn(`No container selector worked for ${retailerKey}`);
+      return results;
+    }
+
+    $(containerSelector).each((index, element) => {
       try {
         const $element = $(element);
 
-        // Extract data using selectors
-        const name = $element.find(selectors.name).text().trim();
-        const priceText = $element.find(selectors.price).text().trim();
-        const discountPriceText = $element.find(selectors.discountPrice).text().trim();
-        const url = $element.find(selectors.url).attr('href');
+        // Try each selector in fallback order
+        const name = trySelectors($element, selectors.wineName);
+        const priceText = trySelectors($element, selectors.price);
+        const url = tryGetAttribute($element, selectors.productLink, 'href');
 
         if (name && priceText) {
           const price = parsePrice(priceText);
+          const discountPriceText = trySelectors($element, selectors.discountPrice);
           const discountPrice = discountPriceText ? parsePrice(discountPriceText) : null;
 
           results.push({
@@ -52,40 +58,42 @@ async function scrapeSearchPage(retailerName, config, retailerKey) {
   }
 }
 
-async function scrapeProductPage(productUrl, config) {
-  try {
-    const response = await axios.get(productUrl, {
-      timeout: 10000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
-    });
+// Try multiple selectors separated by comma, return first match
+function trySelectors($element, selectorString) {
+  if (!selectorString) return null;
 
-    const $ = cheerio.load(response.data);
-    const selectors = config.productPage;
-
-    const extract = (selector) => {
-      if (selector === 'window.location.href') return productUrl;
-      return $(selector).text().trim() || null;
-    };
-
-    return {
-      url: productUrl,
-      name: extract(selectors.name),
-      price: parsePrice(extract(selectors.price)),
-      discountPrice: parsePrice(extract(selectors.discountPrice)),
-      description: extract(selectors.description),
-      vintage: extract(selectors.vintage),
-      country: extract(selectors.country)
-    };
-  } catch (error) {
-    console.error(`Product page scraper error for ${productUrl}:`, error.message);
-    return null;
+  const selectors = selectorString.split(',').map(s => s.trim());
+  for (const selector of selectors) {
+    const text = $element.find(selector).text().trim();
+    if (text) return text;
   }
+  return null;
+}
+
+// Try multiple selectors for attribute, return first match
+function tryGetAttribute($element, selectorString, attr) {
+  if (!selectorString) return null;
+
+  const selectors = selectorString.split(',').map(s => s.trim());
+  for (const selector of selectors) {
+    const value = $element.find(selector).attr(attr);
+    if (value) return value;
+  }
+  return null;
+}
+
+// Find first working container selector
+function getFirstWorkingSelector($, selectorString) {
+  const selectors = selectorString.split(',').map(s => s.trim());
+  for (const selector of selectors) {
+    if ($(selector).length > 0) {
+      return selector;
+    }
+  }
+  return null;
 }
 
 function parsePrice(priceStr) {
-  // Handle various Danish price formats: "99,95 DKK", "99,95kr", "99.95", etc.
   const match = priceStr.match(/(\d+[.,]\d{2})/);
   if (match) {
     return parseFloat(match[1].replace(',', '.'));
@@ -100,7 +108,7 @@ function makeAbsoluteUrl(url, origin) {
   return origin + '/' + url;
 }
 
-// Backward compatibility: scrapeRetailer uses searchPage mode
+// Backward compatibility
 async function scrapeRetailer(retailerName, config, retailerKey) {
   return scrapeSearchPage(retailerName, config, retailerKey);
 }
@@ -108,6 +116,7 @@ async function scrapeRetailer(retailerName, config, retailerKey) {
 module.exports = {
   scrapeRetailer,
   scrapeSearchPage,
-  scrapeProductPage,
-  parsePrice
+  parsePrice,
+  trySelectors,
+  getFirstWorkingSelector
 };
