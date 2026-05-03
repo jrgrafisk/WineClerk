@@ -18,6 +18,25 @@ module.exports = {
       country: '[data-country]'
     }
   },
+    havnens vin: {
+    searchUrl: 'https://havnens-vin.dk/catalogsearch/result/?q=',
+    searchPage: {
+      container: 'item product product-item scroll-reveal reveal-slide-in reveal-ready',
+      name: 'product name product-item-name',
+      price: 'price-container price-final_price tax weee',
+      discountPrice: '.discount-price',
+      url: 'a'
+    },
+    productPage: {
+      url: 'window.location.href',
+      name: 'page-title-wrapper product scroll-reveal reveal-slide-in reveal-ready',
+      price: 'price-container price-final_price tax weee',
+      discountPrice: '[data-sale-price]',
+      description: 'description',
+      vintage: '[data-vintage]',
+      country: '[data-country]'
+    }
+  },
   andrupvin: {
     searchUrl: 'https://www.andrupvin.dk/search?q=',
     searchPage: {
