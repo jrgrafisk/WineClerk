@@ -1,22 +1,31 @@
-const axios = require('axios');
 const cheerio = require('cheerio');
 
-async function scrapeSearchPage(retailerName, config, retailerKey) {
+const BROWSER_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+  'Accept-Language': 'da-DK,da;q=0.9,en-US;q=0.8,en;q=0.7',
+  'Accept-Encoding': 'gzip, deflate, br',
+  'Cache-Control': 'max-age=0',
+  'Upgrade-Insecure-Requests': '1'
+};
+
+async function fetchHtml(url, timeoutMs = 10000) {
+  const res = await fetch(url, {
+    headers: BROWSER_HEADERS,
+    signal: AbortSignal.timeout(timeoutMs)
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.text();
+}
+
+async function scrapeSearchPage(wineName, config, retailerKey) {
   try {
-    const searchUrl = config.url + encodeURIComponent(retailerName);
+    const searchUrl = config.url + encodeURIComponent(wineName);
+    const html = await fetchHtml(searchUrl, config.timeout || 10000);
+    const $ = cheerio.load(html);
+    const results = [];
     const selectors = config.selectors;
 
-    const response = await axios.get(searchUrl, {
-      timeout: 10000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
-    });
-
-    const $ = cheerio.load(response.data);
-    const results = [];
-
-    // Get all product containers - try selectors in order
     const containerSelector = getFirstWorkingSelector($, selectors.container);
     if (!containerSelector) {
       console.warn(`No container selector worked for ${retailerKey}`);
@@ -25,16 +34,15 @@ async function scrapeSearchPage(retailerName, config, retailerKey) {
 
     $(containerSelector).each((index, element) => {
       try {
-        const $element = $(element);
+        const $el = $(element);
 
-        // Try each selector in fallback order
-        const name = trySelectors($element, selectors.wineName);
-        const priceText = trySelectors($element, selectors.price);
-        const url = tryGetAttribute($element, selectors.productLink, 'href');
+        const name = trySelectors($el, selectors.wineName);
+        const priceText = trySelectors($el, selectors.price);
+        const url = tryGetAttribute($el, selectors.productLink, 'href');
 
         if (name && priceText) {
           const price = parsePrice(priceText);
-          const discountPriceText = trySelectors($element, selectors.discountPrice);
+          const discountPriceText = trySelectors($el, selectors.discountPrice);
           const discountPrice = discountPriceText ? parsePrice(discountPriceText) : null;
 
           results.push({
@@ -58,47 +66,41 @@ async function scrapeSearchPage(retailerName, config, retailerKey) {
   }
 }
 
-// Try multiple selectors separated by comma, return first match
 function trySelectors($element, selectorString) {
   if (!selectorString) return null;
-
-  const selectors = selectorString.split(',').map(s => s.trim());
-  for (const selector of selectors) {
+  for (const selector of selectorString.split(',').map(s => s.trim())) {
     const text = $element.find(selector).text().trim();
     if (text) return text;
   }
   return null;
 }
 
-// Try multiple selectors for attribute, return first match
 function tryGetAttribute($element, selectorString, attr) {
   if (!selectorString) return null;
-
-  const selectors = selectorString.split(',').map(s => s.trim());
-  for (const selector of selectors) {
+  for (const selector of selectorString.split(',').map(s => s.trim())) {
     const value = $element.find(selector).attr(attr);
     if (value) return value;
   }
   return null;
 }
 
-// Find first working container selector
 function getFirstWorkingSelector($, selectorString) {
-  const selectors = selectorString.split(',').map(s => s.trim());
-  for (const selector of selectors) {
-    if ($(selector).length > 0) {
-      return selector;
-    }
+  for (const selector of selectorString.split(',').map(s => s.trim())) {
+    if ($(selector).length > 0) return selector;
   }
   return null;
 }
 
 function parsePrice(priceStr) {
-  const match = priceStr.match(/(\d+[.,]\d{2})/);
-  if (match) {
-    return parseFloat(match[1].replace(',', '.'));
+  // Handle European format: "1.299,95" → 1299.95
+  let cleaned = priceStr.replace(/[^0-9.,]/g, '');
+  if (/,\d{2}(?:\s|$|[^0-9])/.test(cleaned) || cleaned.endsWith(',00') || /,\d{2}$/.test(cleaned)) {
+    cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+  } else {
+    cleaned = cleaned.replace(/,/g, '');
   }
-  return null;
+  const price = parseFloat(cleaned);
+  return isNaN(price) || price <= 0 ? null : price;
 }
 
 function makeAbsoluteUrl(url, origin) {
@@ -108,9 +110,8 @@ function makeAbsoluteUrl(url, origin) {
   return origin + '/' + url;
 }
 
-// Backward compatibility
-async function scrapeRetailer(retailerName, config, retailerKey) {
-  return scrapeSearchPage(retailerName, config, retailerKey);
+async function scrapeRetailer(wineName, config, retailerKey) {
+  return scrapeSearchPage(wineName, config, retailerKey);
 }
 
 module.exports = {
