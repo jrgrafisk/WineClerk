@@ -1,10 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const { searchSupervin } = require('../scrapers/supervinScraper');
-const { searchAndrupvin } = require('../scrapers/andrupvinScraper');
-const { searchLaudrupvin } = require('../scrapers/laudrupvinScraper');
-const { searchJustvin } = require('../scrapers/justvinScraper');
-const { savePrices } = require('../db');
+const selectorsConfig = require('../config/selectors');
+const { scrapeSearchPage } = require('../scrapers/genericScraper');
+const { logSearch, getCachedPrices, savePrices } = require('../db');
+
+const CACHE_MAX_AGE_HOURS = 24;
+
+// Retailers that work with live scraping (not bot-blocked)
+const LIVE_SCRAPE_ENABLED = ['laudrupvin', 'skagenfood'];
 
 router.get('/search', async (req, res) => {
   const { q } = req.query;
@@ -13,55 +16,73 @@ router.get('/search', async (req, res) => {
     return res.status(400).json({ error: 'Search query required' });
   }
 
+  const wineName = q.trim();
+
   try {
-    const [supervinResults, andrupvinResults, laudrupvinResults, justvinResults] = await Promise.all([
-      searchSupervin(q),
-      searchAndrupvin(q),
-      searchLaudrupvin(q),
-      searchJustvin(q)
-    ]);
+    // Always log the search (for crawler queue)
+    await logSearch(wineName);
 
-    const allResults = [
-      ...supervinResults,
-      ...andrupvinResults,
-      ...laudrupvinResults,
-      ...justvinResults
-    ];
-
-    // Save prices to database
-    if (allResults.length > 0) {
-      await savePrices(allResults);
+    // 1. Check DB for fresh cached prices
+    const cached = await getCachedPrices(wineName, CACHE_MAX_AGE_HOURS);
+    if (cached && cached.length > 0) {
+      return res.json(formatResults(cached));
     }
 
-    // Group by wine name and aggregate prices
-    const grouped = {};
-    allResults.forEach(result => {
-      const key = result.name.toLowerCase();
-      if (!grouped[key]) {
-        grouped[key] = {
-          name: result.name,
-          prices: []
-        };
-      }
-      grouped[key].prices.push({
-        retailer: result.retailer,
-        price: result.price,
-        url: result.url
-      });
-    });
+    // 2. No fresh cache — try live scraping for enabled retailers
+    const searches = Object.entries(selectorsConfig)
+      .filter(([key]) => LIVE_SCRAPE_ENABLED.includes(key))
+      .map(([key, config]) => scrapeSearchPage(wineName, config, key));
 
-    // Sort by lowest price
-    const response = Object.values(grouped).sort((a, b) => {
-      const aMin = Math.min(...a.prices.map(p => p.price || Infinity));
-      const bMin = Math.min(...b.prices.map(p => p.price || Infinity));
-      return aMin - bMin;
-    });
+    const results = (await Promise.all(searches)).flat();
 
-    res.json(response);
+    // Save to DB for future cache hits
+    if (results.length > 0) {
+      await savePrices(results);
+    }
+
+    res.json(formatResults(results.map(r => ({
+      wine_name: r.name,
+      retailer: r.retailer,
+      price: r.price,
+      url: r.url
+    }))));
+
   } catch (error) {
     console.error('Search error:', error);
     res.status(500).json({ error: 'Search failed' });
   }
 });
+
+function formatResults(rows) {
+  const grouped = {};
+
+  rows.forEach(row => {
+    const key = (row.wine_name || row.name || '').toLowerCase();
+    if (!key) return;
+
+    if (!grouped[key]) {
+      grouped[key] = {
+        name: row.wine_name || row.name,
+        prices: []
+      };
+    }
+
+    if (row.price !== null && row.price !== undefined) {
+      grouped[key].prices.push({
+        retailer: row.retailer,
+        price: row.price,
+        url: row.url || null
+      });
+    }
+  });
+
+  return Object.values(grouped)
+    .filter(w => w.prices.length > 0)
+    .sort((a, b) => {
+      const aMin = Math.min(...a.prices.map(p => p.price));
+      const bMin = Math.min(...b.prices.map(p => p.price));
+      return aMin - bMin;
+    });
+}
 
 module.exports = router;
