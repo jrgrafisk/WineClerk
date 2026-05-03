@@ -3,11 +3,11 @@ module.exports = {
     name: 'Supervin',
     url: 'https://www.supervin.dk/searchpage?Products_dk%5Bquery%5D=',
     selectors: {
-      container: '.product-item',
-      wineName: '.product-title',
-      price: '.product-price, .price',
-      discountPrice: '.discount-price, .sale-price',
-      productLink: 'a'
+      container: 'article',
+      wineName: 'h4 a, .product-info h4 a',
+      price: '.base-price, .price',
+      discountPrice: '.volume-discounted-price, .sale-price',
+      productLink: 'h4 a, .product-image a'
     },
     domain: 'supervin.dk'
   },
