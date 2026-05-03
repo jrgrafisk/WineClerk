@@ -97,9 +97,9 @@ module.exports = {
   havnensvin: {
     searchUrl: 'https://havnens-vin.dk/catalogsearch/result/?q=',
     searchPage: {
-      container: 'li.product.product-item',
-      name: '.product-item-name a',
-      price: '.price-container .price',
+      container: 'li.product-item',
+      name: 'strong.product-item-name a',
+      price: 'span.price',
       discountPrice: null,
       url: 'a.product-item-link'
     },
