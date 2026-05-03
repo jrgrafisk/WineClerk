@@ -22,7 +22,7 @@ async function performSearch() {
   errorDiv.style.display = 'none';
 
   try {
-    const response = await fetch(`/api/wine/search?q=${encodeURIComponent(query)}`);
+    const response = await fetch(`/wine/api/wine/search?q=${encodeURIComponent(query)}`);
 
     if (!response.ok) {
       throw new Error('Search failed');

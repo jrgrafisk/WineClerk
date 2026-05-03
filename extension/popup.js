@@ -34,8 +34,9 @@ async function searchWine(wineName) {
   errorDiv.style.display = 'none';
 
   try {
-    // Use localhost for development, or your production server
-    const apiUrl = 'http://localhost:3000/api/wine/search?q=' + encodeURIComponent(wineName);
+    // Use production server or localhost for development
+    const apiBaseUrl = 'https://pedalpricer.cc/wine/api/wine/search';
+    const apiUrl = apiBaseUrl + '?q=' + encodeURIComponent(wineName);
     const response = await fetch(apiUrl);
 
     if (!response.ok) {
