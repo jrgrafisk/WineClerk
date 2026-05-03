@@ -93,5 +93,24 @@ module.exports = {
       vintage: '[data-vintage]',
       country: '[data-country]'
     }
+  },
+  'havnens-vin': {
+    searchUrl: 'https://havnens-vin.dk/catalogsearch/result/?q=',
+    searchPage: {
+      container: '.product.product-item',
+      name: '.product-item-name',
+      price: '.price-final_price',
+      discountPrice: '.old-price',
+      url: 'a'
+    },
+    productPage: {
+      url: 'window.location.href',
+      name: '.page-title-wrapper h1',
+      price: '.price-final_price',
+      discountPrice: '.old-price',
+      description: '[itemprop="description"]',
+      vintage: '[data-vintage]',
+      country: '[data-country]'
+    }
   }
 };
