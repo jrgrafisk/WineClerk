@@ -35,18 +35,17 @@ module.exports = {
     url: 'https://laudrup.dk/catalogsearch/result/?q=',
     selectors: {
       container: '.product-item-info',
-      wineName: 'strong.product-item-name a, .product-item-name a',
-      price: '.price-final_price .price, .price',
-      discountPrice: '.minimal-price-link .price',
-      productLink: '.product-item-link, a.product-photo'
+      wineName: '.product-item-link',
+      price: '.price-container.price-final_price .price',
+      discountPrice: null,
+      productLink: '.product-item-link'
     },
     productPage: {
-      name: 'h1.page-title, h1',
-      price: '.price-final_price .price',
-      discountPrice: '.price-tier_price .price'
+      name: '.page-title',
+      price: '.price-including-tax .price',
+      discountPrice: null
     },
-    domain: 'laudrup.dk',
-    notes: 'Note: Search shows bulk discount price (204 for 12), single bottle is 266'
+    domain: 'laudrup.dk'
   },
 
   justvin: {
