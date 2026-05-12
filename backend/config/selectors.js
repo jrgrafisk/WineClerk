@@ -75,6 +75,24 @@ module.exports = {
     notes: 'Multiple selector fallbacks for robustness'
   },
 
+  kjaersommerfeldt: {
+    name: 'Kjær & Sommerfeldt',
+    url: 'https://www.kjaersommerfeldt.dk/sog/?q=',
+    selectors: {
+      container: '.product-card__inner',
+      wineName: '.product-link__name',
+      price: '.product-price__price',
+      discountPrice: null,
+      productLink: 'a.product-link'
+    },
+    productPage: {
+      name: 'h1.product-header__product-name',
+      price: '.product-price__price',
+      discountPrice: null
+    },
+    domain: 'kjaersommerfeldt.dk'
+  },
+
   skagenfood: {
     name: 'Skagen Food',
     url: 'https://skagenfood.dk/da-dk/soeg/?q=',

@@ -1,5 +1,10 @@
 # Changes Log
 
+## 2026-05-12 21:00 — Added Kjær & Sommerfeldt
+- Added kjaersommerfeldt.dk to selectors.js
+- Container: `.product-card__inner`, name: `.product-link__name`, price: `.product-price__price`
+- Note: Philipson Wine error was a bug on their own website (C# Razor NullReference), unrelated to our scraper
+
 ## 2026-05-12 20:45 — Laudrupvin selectors confirmed via console script
 - Updated `.product-item-link` for search page name selector
 - Fixed price path to `.price-container.price-final_price .price`
